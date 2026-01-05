@@ -1,0 +1,174 @@
+import makeWASocket, { useMultiFileAuthState, DisconnectReason, downloadMediaMessage } from '@whiskeysockets/baileys';
+import { Boom } from '@hapi/boom';
+import { prisma } from './prisma'; 
+import { gerarResposta } from './ai';
+import qrcode from 'qrcode-terminal';
+import fs from 'fs/promises';
+import path from 'path';
+import mime from 'mime-types';
+
+let sock: any; 
+
+export const getSocket = () => sock;
+
+export const startWhatsApp = async () => {
+    // Atenção: Use o nome da pasta que já existe no seu projeto. 
+    // Se for 'auth_baileys', mude abaixo.
+    const { state, saveCreds } = await useMultiFileAuthState('./auth_info_baileys');
+
+    sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: false,
+        defaultQueryTimeoutMs: undefined,
+        browser: ["OmniDesk Pro", "Chrome", "2.0.0"]
+    });
+
+    sock.ev.on('creds.update', saveCreds);
+
+    sock.ev.on('connection.update', (update: any) => {
+        const { connection, lastDisconnect, qr } = update;
+        
+        if (qr) { 
+            console.log("📲 ESCANEIE O QR CODE ABAIXO:");
+            qrcode.generate(qr, { small: true }); 
+        }
+        
+        if (connection === 'close') {
+            const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+            console.log('❌ Conexão caiu. Reconectando...', shouldReconnect);
+            if (shouldReconnect) startWhatsApp();
+        } else if (connection === 'open') {
+            console.log('✅ WhatsApp Conectado com Sucesso!');
+        }
+    });
+
+    // --- PROCESSAMENTO DE MENSAGENS ---
+    sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
+        if (type !== 'notify') return;
+
+        for (const msg of messages) {
+            if (!msg.message || msg.key.fromMe) continue;
+
+            const contactId = msg.key.remoteJid; 
+
+            // 1. Identificar o tipo de mensagem
+            const messageType = Object.keys(msg.message)[0];
+            let content = "";
+            let mediaUrl = null;
+            let mediaTypeDb = "text";
+            let localFilePath = null;
+
+            try {
+                // Caso seja texto puro
+                if (messageType === 'conversation' || messageType === 'extendedTextMessage') {
+                    content = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+                } 
+                // Caso seja Mídia (Imagem, Áudio, Documento)
+                else if (['imageMessage', 'audioMessage', 'documentMessage'].includes(messageType)) {
+                    
+                    if (messageType === 'imageMessage') mediaTypeDb = 'image';
+                    else if (messageType === 'audioMessage') mediaTypeDb = 'audio';
+                    else mediaTypeDb = 'document';
+
+                    // Download do buffer
+                    const buffer = await downloadMediaMessage(msg, 'buffer', {}, { logger: sock.logger, reuploadRequest: sock.updateMediaMessage });
+                    
+                    // Descobre extensão
+                    const mimeType = msg.message[messageType]?.mimetype || "";
+                    const extension = mime.extension(mimeType) || "bin";
+                    
+                    // Gera nome único: timestamp + final do numero + extensão
+                    const fileName = `${Date.now()}_${contactId.slice(-4)}.${extension}`;
+                    
+                    // Caminho Absoluto (onde salva) e Relativo (link pro front)
+                    localFilePath = path.join(__dirname, '../../uploads', fileName);
+                    mediaUrl = `/uploads/${fileName}`;
+
+                    // Salva no disco
+                    await fs.writeFile(localFilePath, buffer);
+
+                    // Legenda ou texto padrão
+                    content = msg.message[messageType]?.caption || `[Arquivo: ${mediaTypeDb}]`;
+                    
+                    console.log(`📁 Mídia salva: ${fileName}`);
+                } else {
+                    // Ignora stickers, contatos, etc.
+                    continue; 
+                }
+            } catch (erroDownload) {
+                console.error("Erro ao baixar mídia:", erroDownload);
+                content = "[Erro ao baixar arquivo]";
+            }
+
+            // 2. Garante que contato existe
+            const contact = await prisma.contact.upsert({
+                where: { id: contactId },
+                update: {},
+                create: { id: contactId, name: msg.pushName || "Cliente Novo", isAiActive: true }
+            });
+
+            // 3. Salva mensagem no banco
+            await prisma.message.create({
+                data: {
+                    contactId,
+                    content,
+                    fromMe: false,
+                    mediaType: mediaTypeDb,
+                    mediaUrl: mediaUrl // Pode ser null se for texto
+                }
+            });
+
+            // 4. IA Processa (com suporte a arquivo se houver)
+            if (contact.isAiActive) {
+                await sock.sendPresenceUpdate('composing', contactId);
+                
+                // Envia texto + caminho do arquivo local para a IA ler
+                const respostaFull = await gerarResposta(content, contactId, localFilePath || undefined);
+                
+                // Extração do Relatório Oculto
+                const regexReport = /\[REPORT_START\]([\s\S]*?)\[REPORT_END\]/;
+                const match = respostaFull.match(regexReport);
+                let textoFinal = respostaFull;
+
+                if (match) {
+                    try {
+                        const jsonStr = match[1];
+                        const reportData = JSON.parse(jsonStr);
+                        
+                        // Cria ticket automaticamente
+                        await prisma.ticket.create({
+                            data: {
+                                contactId,
+                                title: reportData.tema || "Triagem Finalizada",
+                                priority: reportData.prioridade || "medium",
+                                status: "todo",
+                                summary: reportData 
+                            }
+                        });
+                        
+                        // Remove o JSON da resposta pro cliente
+                        textoFinal = respostaFull.replace(regexReport, "").trim();
+                    } catch (err) {
+                        console.error("Erro JSON IA:", err);
+                        textoFinal = respostaFull.replace(/\[REPORT_START\][\s\S]*?\[REPORT_END\]/, "").trim();
+                    }
+                }
+
+                // Envia resposta limpa
+                if (textoFinal) {
+                    await sock.sendMessage(contactId, { text: textoFinal });
+                    
+                    await prisma.message.create({
+                        data: {
+                            contactId,
+                            content: textoFinal,
+                            fromMe: true,
+                            isAi: true,
+                            mediaType: 'text'
+                        }
+                    });
+                }
+            }
+        }
+    });
+};

@@ -1,0 +1,88 @@
+// ARQUIVO: prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- MODELOS ---
+
+model User {
+  id           String      @id @default(uuid())
+  name         String
+  email        String      @unique
+  password     String
+  role         String      @default("AGENT") 
+  createdAt    DateTime    @default(now())
+  
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  
+  tickets      Ticket[]
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  
+  users     User[]
+  tickets   Ticket[]
+}
+
+model Contact {
+  id            String    @id 
+  name          String?   
+  pushName      String?   
+  profilePicUrl String?
+  isAiActive    Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  messages      Message[]
+  tickets       Ticket[]
+}
+
+model Ticket {
+  id          String   @id @default(uuid())
+  title       String   
+  status      String   @default("todo") 
+  priority    String   @default("medium") 
+  
+  summary     Json?    
+  closingNote String?  
+  
+  contactId   String
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  assignedToId String?
+  assignedTo   User?    @relation(fields: [assignedToId], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String   
+  
+  // --- CAMPOS DE MÍDIA ---
+  mediaType String   @default("text") // text, image, audio, document
+  mediaUrl  String?  // <--- CAMPO NOVO: Link para o arquivo na pasta uploads
+  
+  fromMe    Boolean  
+  isAi      Boolean  @default(false) 
+  
+  contactId String
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+}
