@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import path from "path"; // Import necessário para caminhos de pasta
 import { startWhatsApp, getSocket } from "./services/whatsapp"; 
 import { prisma } from "./services/prisma"; 
+import { upload } from "./services/upload";
 
 dotenv.config();
 
@@ -15,6 +16,13 @@ app.use(express.json());
 // Libera a pasta 'uploads' para que o site possa mostrar as fotos e áudios
 // O navegador vai acessar tipo: http://localhost:3001/uploads/nome-do-arquivo.jpg
 app.use('/uploads', express.static('uploads'));
+
+// --- ROTAS DE UPLOAD ---
+app.post("/api/upload", upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({ url: fileUrl, filename: req.file.filename, mimetype: req.file.mimetype });
+});
 
 // --- 1. ROTAS DE TICKETS (FLUXO DE TRABALHO) ---
 
@@ -212,25 +220,56 @@ app.delete("/api/messages/:id", async (req, res) => {
 // --- 4. ENVIO DE MENSAGENS E LOGIN ---
 
 app.post("/api/send", async (req, res) => {
-    const { contactId, text } = req.body;
+    const { contactId, text, mediaUrl, mediaType } = req.body;
     const socket = getSocket();
 
     if (!socket) return res.status(503).json({ error: "WhatsApp desconectado" });
 
     try {
-        // Envia mensagem de texto via Socket
-        await socket.sendMessage(contactId, { text });
-        
-        // Salva no banco
-        await prisma.message.create({
-            data: { 
-                contactId, 
-                content: text, 
-                fromMe: true, 
-                isAi: false,
-                mediaType: 'text' // Garante que é texto
+        // Se tiver mediaUrl, envia mídia
+        if (mediaUrl && mediaType) {
+            // Caminho absoluto para o arquivo
+            const filePath = path.join(__dirname, '../uploads', path.basename(mediaUrl));
+
+            let messageContent: any = {};
+
+            if (mediaType === 'image') {
+                messageContent = { image: { url: filePath }, caption: text };
+            } else if (mediaType === 'audio') {
+                // Audio PTT (push to talk) = true faz parecer nota de voz
+                messageContent = { audio: { url: filePath }, ptt: true };
+            } else {
+                messageContent = { document: { url: filePath }, mimetype: 'application/octet-stream', fileName: text || 'Arquivo' };
             }
-        });
+
+            await socket.sendMessage(contactId, messageContent);
+
+             await prisma.message.create({
+                data: {
+                    contactId,
+                    content: text || (mediaType === 'audio' ? 'Áudio enviado' : 'Arquivo enviado'),
+                    fromMe: true,
+                    isAi: false,
+                    mediaType: mediaType,
+                    mediaUrl: mediaUrl
+                }
+            });
+
+        } else {
+            // Envio de Texto Simples
+            await socket.sendMessage(contactId, { text });
+
+            await prisma.message.create({
+                data: {
+                    contactId,
+                    content: text,
+                    fromMe: true,
+                    isAi: false,
+                    mediaType: 'text'
+                }
+            });
+        }
+
         res.json({ success: true });
     } catch (error) {
         console.error("Erro envio:", error);
