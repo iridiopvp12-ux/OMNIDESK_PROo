@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../services/prisma';
+import { getIO } from '../services/socket';
 
 export class TicketController {
     // Listar Tickets (Kanban)
@@ -40,6 +41,7 @@ export class TicketController {
                     departmentId: user?.departmentId
                 }
             });
+            getIO().emit("ticket:update", ticket);
             res.json(ticket);
         } catch (e) {
             res.status(500).json({ error: "Erro ao assumir ticket" });
@@ -58,6 +60,7 @@ export class TicketController {
                     assignedToId: null
                 }
             });
+            getIO().emit("ticket:update", ticket);
             res.json(ticket);
         } catch (e) {
             res.status(500).json({ error: "Erro ao encerrar ticket" });
@@ -76,6 +79,7 @@ export class TicketController {
                     assignedToId: null
                 }
             });
+            getIO().emit("ticket:update", { id: req.params.ticketId });
             res.json({ success: true });
         } catch (e) {
             res.status(500).json({ error: "Erro ao transferir" });
@@ -89,6 +93,7 @@ export class TicketController {
                 where: { id: req.params.id },
                 data: req.body
             });
+            getIO().emit("ticket:update", ticket);
             res.json(ticket);
         } catch (e) {
             res.status(500).json({ error: "Erro ao atualizar ticket" });
@@ -99,6 +104,7 @@ export class TicketController {
     static async delete(req: Request, res: Response) {
         try {
             await prisma.ticket.delete({ where: { id: req.params.id } });
+            getIO().emit("ticket:update", { id: req.params.id, deleted: true });
             res.json({ success: true });
         } catch (e) {
             res.status(500).json({ error: "Erro ao excluir ticket" });

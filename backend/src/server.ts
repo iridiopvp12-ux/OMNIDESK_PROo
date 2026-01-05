@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 import path from "path";
 import { startWhatsApp } from "./services/whatsapp";
 import { router } from "./routes";
+import { initIO } from "./services/socket";
+import http from "http";
 
 dotenv.config();
 
@@ -19,10 +21,13 @@ app.use('/uploads', express.static(uploadsPath));
 // --- 1. ROTAS API ---
 app.use("/api", router);
 
-// --- INICIALIZAÇÃO ---
+// --- INICIALIZAÇÃO (HTTP + SOCKET) ---
+const server = http.createServer(app);
+initIO(server);
+
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, async () => {
+server.listen(PORT, async () => {
   console.log(`🛡️ API ONLINE: http://localhost:${PORT}`);
   console.log(`📁 Pasta de Uploads: ${uploadsPath}`);
   
