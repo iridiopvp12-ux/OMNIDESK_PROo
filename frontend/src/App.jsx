@@ -7,7 +7,8 @@ import TicketBoard from './components/tickets/TicketBoard';
 import UserManagement from './components/users/UserManagement';
 import Dashboard from './components/dashboard/Dashboard';
 import { ToastProvider, useToast } from './components/ui/Toast';
-import { API_URL } from './config';
+import { API_URL, SOCKET_URL, NOTIFICATION_SOUND } from './config';
+import { io } from 'socket.io-client';
 
 // Wrapper para usar o hook de Toast dentro do App
 const AppContent = () => {
@@ -29,7 +30,7 @@ const AppContent = () => {
 
   const activeContact = contacts.find(c => c.id === selectedChatId);
 
-  // Polling de Contatos
+  // Fetch Functions (No Polling)
   const fetchContacts = useCallback(async () => {
     if (!currentUser) return;
     try {
@@ -49,9 +50,6 @@ const AppContent = () => {
     } catch (error) { console.error("Erro API Contatos", error); }
   }, [currentUser]);
 
-  useEffect(() => { fetchContacts(); const interval = setInterval(fetchContacts, 3000); return () => clearInterval(interval); }, [fetchContacts]);
-
-  // Polling de Tickets
   const fetchTickets = useCallback(async () => {
     if (!currentUser) return;
     try {
@@ -63,14 +61,8 @@ const AppContent = () => {
     } catch (error) { console.error("Erro API Tickets", error); }
   }, [currentUser]);
 
-  useEffect(() => {
-      if (activeTab === 'tickets') { fetchTickets(); const interval = setInterval(fetchTickets, 5000); return () => clearInterval(interval); }
-  }, [activeTab, fetchTickets]);
-
-  // Polling de Mensagens
-  useEffect(() => {
-    if (!selectedChatId) return;
-    const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
+      if (!selectedChatId) return;
       try {
         const res = await fetch(`${API_URL}/messages/${selectedChatId}`);
         const data = await res.json();
@@ -84,13 +76,48 @@ const AppContent = () => {
           mediaType: m.mediaType,
           mediaUrl: m.mediaUrl
         }));
-        setMessages(prev => { if (prev.length !== formattedMessages.length) return formattedMessages; return prev; });
+        setMessages(formattedMessages);
       } catch (error) { console.error("Erro API Mensagens", error); }
-    };
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 2000); 
-    return () => clearInterval(interval);
   }, [selectedChatId]);
+
+  // Initial Load
+  useEffect(() => {
+      if(currentUser) {
+          fetchContacts();
+          fetchTickets();
+      }
+  }, [currentUser, fetchContacts, fetchTickets]);
+
+  useEffect(() => {
+      fetchMessages();
+  }, [selectedChatId, fetchMessages]);
+
+  // Socket.io Integration
+  useEffect(() => {
+      if (!currentUser) return;
+      const socket = io(SOCKET_URL);
+
+      socket.on("connect", () => console.log("Socket Connected"));
+
+      socket.on("ticket:update", () => {
+          fetchTickets();
+          fetchContacts(); // Ticket updates might affect contact status
+      });
+
+      socket.on("message:new", (data) => {
+          if (data.contactId === selectedChatId) {
+              fetchMessages();
+          } else {
+              // Notification Sound if in background or other chat
+              const audio = new Audio(NOTIFICATION_SOUND);
+              audio.play().catch(e => console.log("Audio play failed", e));
+              addToast(`Nova mensagem de ${data.contactId}`, "info");
+          }
+          fetchContacts(); // Update last message preview
+      });
+
+      return () => socket.disconnect();
+  }, [currentUser, selectedChatId, fetchContacts, fetchTickets, fetchMessages, addToast]);
 
   // Scroll Logic
   useEffect(() => { prevMessagesLength.current = 0; setIsScrolledUp(false); }, [selectedChatId]);

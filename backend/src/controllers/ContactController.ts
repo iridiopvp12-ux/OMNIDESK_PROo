@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../services/prisma';
 import { getSocket } from '../services/whatsapp';
+import { getIO } from '../services/socket';
 import path from 'path';
 
 export class ContactController {
@@ -83,6 +84,7 @@ export class ContactController {
         if (!socket) return res.status(503).json({ error: "WhatsApp desconectado" });
 
         try {
+            let newMessage;
             if (mediaUrl && mediaType) {
                 const filePath = path.join(process.cwd(), 'uploads', path.basename(mediaUrl));
                 let messageContent: any = {};
@@ -97,7 +99,7 @@ export class ContactController {
 
                 await socket.sendMessage(contactId, messageContent);
 
-                 await prisma.message.create({
+                 newMessage = await prisma.message.create({
                     data: {
                         contactId,
                         content: text || (mediaType === 'audio' ? 'Áudio enviado' : 'Arquivo enviado'),
@@ -110,7 +112,7 @@ export class ContactController {
 
             } else {
                 await socket.sendMessage(contactId, { text });
-                await prisma.message.create({
+                newMessage = await prisma.message.create({
                     data: {
                         contactId,
                         content: text,
@@ -120,6 +122,7 @@ export class ContactController {
                     }
                 });
             }
+            getIO().emit("message:new", { contactId, message: newMessage });
             res.json({ success: true });
         } catch (error) {
             console.error("Erro envio:", error);
