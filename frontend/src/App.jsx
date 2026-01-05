@@ -5,6 +5,7 @@ import ChatList from './components/chat/ChatList';
 import ChatWindow from './components/chat/ChatWindow';
 import TicketBoard from './components/tickets/TicketBoard';
 import UserManagement from './components/users/UserManagement';
+import Dashboard from './components/dashboard/Dashboard';
 import { ToastProvider, useToast } from './components/ui/Toast';
 import { API_URL } from './config';
 
@@ -204,6 +205,7 @@ const AppContent = () => {
                 refreshData={() => { fetchTickets(); fetchContacts(); }}
             />
         )}
+        {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'users' && <UserManagement />}
       </div>
     </div>

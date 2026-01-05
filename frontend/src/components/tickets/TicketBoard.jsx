@@ -145,7 +145,10 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
                                     >
                                         <div className={`flex justify-between items-center mb-4 px-3 py-2 rounded-lg ${col.bg} border border-transparent`}>
                                             <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide">{col.label}</h3>
-                                            <span className="bg-white text-gray-600 text-xs px-2 py-0.5 rounded-full shadow-sm font-mono">{col.list.length}</span>
+                                            <div className="flex items-center gap-2">
+                                                {col.id === 'done' && <button onClick={() => setActiveTab('dashboard')} className="text-[10px] text-blue-600 hover:underline font-bold">Ver Todos</button>}
+                                                <span className="bg-white text-gray-600 text-xs px-2 py-0.5 rounded-full shadow-sm font-mono">{col.list.length}</span>
+                                            </div>
                                         </div>
 
                                         <div className="bg-gray-100/50 p-2 rounded-2xl h-full space-y-3 border border-gray-200 overflow-y-auto custom-scrollbar min-h-[200px]">
