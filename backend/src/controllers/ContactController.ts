@@ -129,4 +129,16 @@ export class ContactController {
             res.status(500).json({ error: "Falha no envio" });
         }
     }
+
+    static async sendTyping(req: Request, res: Response) {
+        const { contactId } = req.body;
+        const socket = getSocket();
+        if (socket) {
+            await socket.sendPresenceUpdate('composing', contactId);
+            setTimeout(() => socket.sendPresenceUpdate('paused', contactId), 3000);
+            res.json({ success: true });
+        } else {
+            res.status(503).json({ error: "Desconectado" });
+        }
+    }
 }

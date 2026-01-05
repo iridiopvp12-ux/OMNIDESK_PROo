@@ -14,5 +14,6 @@ router.get("/messages/:contactId", ContactController.getMessages);
 router.put("/messages/:id", ContactController.updateMessage);
 router.delete("/messages/:id", ContactController.deleteMessage);
 router.post("/send", ContactController.sendMessage);
+router.post("/typing", ContactController.sendTyping);
 
 export { router as contactRoutes };

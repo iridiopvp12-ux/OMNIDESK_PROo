@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Bot, X, Download } from 'lucide-react';
+import { FileText, Bot, X, Download, Check, CheckCheck } from 'lucide-react';
 import { API_URL } from '../../config';
 
 const MessageBubble = ({ msg }) => {
@@ -89,8 +89,15 @@ const MessageBubble = ({ msg }) => {
 
                 {renderContent()}
 
-                <div className={`text-[10px] text-right mt-1.5 font-medium ${isUser ? 'text-gray-400' : 'text-white/60'}`}>
+                <div className={`text-[10px] text-right mt-1.5 font-medium flex items-center justify-end gap-1 ${isUser ? 'text-gray-400' : 'text-white/60'}`}>
                     {msg.time}
+                    {!isUser && (
+                        <span>
+                            {msg.status === 5 ? <CheckCheck size={12} className="text-blue-400"/> :
+                             msg.status === 4 ? <CheckCheck size={12}/> :
+                             <Check size={12}/>}
+                        </span>
+                    )}
                 </div>
             </div>
         </div>
