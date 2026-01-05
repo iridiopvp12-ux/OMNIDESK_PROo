@@ -2,11 +2,31 @@
 > backend@1.0.0 dev
 > ts-node src/server.ts
 
-[dotenv@17.2.3] injecting env (3) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (3) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
 🛡️ API ONLINE: http://localhost:3001
-📁 Pasta de Uploads: http://localhost:3001/uploads
-{"level":30,"time":"2026-01-05T16:24:46.412Z","pid":21209,"hostname":"devbox","class":"baileys","browser":["OmniDesk Pro","Chrome","2.0.0"],"helloMsg":{"clientHello":{"ephemeral":"Xfs38YGe4TzrwgMhQsKfwSH+ZWP+OQBe29Nvd9G5jVU="}},"msg":"connected to WA"}
-{"level":30,"time":"2026-01-05T16:24:46.569Z","pid":21209,"hostname":"devbox","class":"baileys","node":{"username":"5527999843440","passive":true,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1027934701},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","device":4,"pull":true,"lidDbMigrated":false},"msg":"logging in..."}
-{"level":30,"time":"2026-01-05T16:24:47.461Z","pid":21209,"hostname":"devbox","class":"baileys","trace":"Error: Connection Failure\n    at WebSocketClient.<anonymous> (file:///app/backend/node_modules/@whiskeysockets/baileys/src/Socket/socket.ts:964:7)\n    at WebSocketClient.emit (node:events:519:28)\n    at WebSocketClient.emit (node:domain:489:12)\n    at file:///app/backend/node_modules/@whiskeysockets/baileys/src/Socket/socket.ts:599:23\n    at Object.decodeFrame (file:///app/backend/node_modules/@whiskeysockets/baileys/src/Utils/noise-handler.ts:187:5)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async WebSocketClient.onMessageReceived (file:///app/backend/node_modules/@whiskeysockets/baileys/src/Socket/socket.ts:570:3)","msg":"connection errored"}
+📁 Pasta de Uploads: /app/backend/uploads
+{"level":30,"time":"2026-01-05T16:38:56.748Z","pid":27178,"hostname":"devbox","class":"baileys","browser":["OmniDesk Pro","Chrome","2.0.0"],"helloMsg":{"clientHello":{"ephemeral":"pVWbZ1Jir0tlOvIRPKt4eUtRHyQMpFYRFIvyufDD5Sg="}},"msg":"connected to WA"}
+{"level":30,"time":"2026-01-05T16:38:56.887Z","pid":27178,"hostname":"devbox","class":"baileys","node":{"username":"5527999843440","passive":true,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1027934701},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","device":4,"pull":true,"lidDbMigrated":false},"msg":"logging in..."}
+{"level":30,"time":"2026-01-05T16:38:58.260Z","pid":27178,"hostname":"devbox","class":"baileys","trace":"Error: Connection Failure\n    at WebSocketClient.<anonymous> (file:///app/backend/node_modules/@whiskeysockets/baileys/src/Socket/socket.ts:964:7)\n    at WebSocketClient.emit (node:events:519:28)\n    at WebSocketClient.emit (node:domain:489:12)\n    at file:///app/backend/node_modules/@whiskeysockets/baileys/src/Socket/socket.ts:599:23\n    at Object.decodeFrame (file:///app/backend/node_modules/@whiskeysockets/baileys/src/Utils/noise-handler.ts:187:5)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async WebSocketClient.onMessageReceived (file:///app/backend/node_modules/@whiskeysockets/baileys/src/Socket/socket.ts:570:3)","msg":"connection errored"}
 ❌ Conexão caiu. Reconectando... false
+PrismaClientInitializationError:
+Invalid `prisma.ticket.findMany()` invocation in
+/app/backend/src/controllers/TicketController.ts:8:49
+
+  5 // Listar Tickets (Kanban)
+  6 static async index(req: Request, res: Response) {
+  7     try {
+→ 8         const tickets = await prisma.ticket.findMany(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at Ln.handleRequestError (/app/backend/node_modules/@prisma/client/runtime/library.js:121:8053)
+    at Ln.handleAndLogRequestError (/app/backend/node_modules/@prisma/client/runtime/library.js:121:7061)
+    at Ln.request (/app/backend/node_modules/@prisma/client/runtime/library.js:121:6745)
+    at async l (/app/backend/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at async index (/app/backend/src/controllers/TicketController.ts:8:29) {
+  clientVersion: '5.19.1',
+  errorCode: undefined
+}
+Terminated
