@@ -168,6 +168,34 @@ app.post("/api/contacts/:id/toggle-ai", async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Erro ao atualizar IA" }); }
 });
 
+app.put("/api/contacts/:id", async (req, res) => {
+    try {
+        await prisma.contact.update({
+            where: { id: req.params.id },
+            data: { name: req.body.name }
+        });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: "Erro ao atualizar Contato" }); }
+});
+
+app.put("/api/messages/:id", async (req, res) => {
+    const { content } = req.body;
+    try {
+        const msg = await prisma.message.update({
+            where: { id: Number(req.params.id) },
+            data: { content }
+        });
+        res.json(msg);
+    } catch (e) { res.status(500).json({ error: "Erro ao editar mensagem" }); }
+});
+
+app.delete("/api/messages/:id", async (req, res) => {
+    try {
+        await prisma.message.delete({ where: { id: Number(req.params.id) } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: "Erro ao excluir mensagem" }); }
+});
+
 // --- 4. ENVIO DE MENSAGENS E LOGIN ---
 
 app.post("/api/send", async (req, res) => {
