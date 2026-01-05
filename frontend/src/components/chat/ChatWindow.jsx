@@ -224,7 +224,12 @@ const ChatWindow = ({
                     <textarea
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendMessage();
+                            }
+                        }}
                         placeholder={isRecording ? "Gravando áudio..." : (activeContact.isAiActive ? "⚠️ A IA está respondendo. Digite para assumir..." : "Escreva sua mensagem...")}
                         className={`flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none text-sm transition shadow-inner
                             ${activeContact.isAiActive ? 'placeholder-amber-600/50 border-amber-200 bg-amber-50/30' : ''}

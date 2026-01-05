@@ -59,4 +59,18 @@ export class AuthController {
             res.json(dept);
         } catch (e) { res.status(500).json({ error: "Erro ao criar setor" }); }
     }
+
+    static async deleteUser(req: Request, res: Response) {
+        try {
+            await prisma.user.delete({ where: { id: req.params.id } });
+            res.json({ success: true });
+        } catch (e) { res.status(500).json({ error: "Erro ao excluir usuário" }); }
+    }
+
+    static async deleteDepartment(req: Request, res: Response) {
+        try {
+            await prisma.department.delete({ where: { id: req.params.id } });
+            res.json({ success: true });
+        } catch (e) { res.status(500).json({ error: "Erro ao excluir setor" }); }
+    }
 }
