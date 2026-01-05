@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { AlertTriangle, FileText, CheckCircle, MessageSquare, X, Building2 } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { AlertTriangle, FileText, CheckCircle, MessageSquare, X, Building2, User } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { API_URL } from '../../config';
 
@@ -30,18 +31,92 @@ const TriageReportCard = ({ report }) => {
   );
 };
 
-const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, refreshData }) => {
+const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, setShowRightPanel, refreshData }) => {
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [closingNote, setClosingNote] = useState("");
     const [showCloseInput, setShowCloseInput] = useState(false);
     const { addToast } = useToast();
 
-    const columns = [
-        { id: 'todo', label: 'Triagem / Entrada', color: 'border-t-red-500', bg: 'bg-red-50/50', list: tickets.filter(t => t.status === 'todo') },
-        { id: 'doing', label: 'Em Atendimento', color: 'border-t-blue-500', bg: 'bg-blue-50/50', list: tickets.filter(t => t.status === 'doing') },
-        { id: 'done', label: 'Finalizados', color: 'border-t-green-500', bg: 'bg-green-50/50', list: tickets.filter(t => t.status === 'done') }
-    ];
+    // Organiza colunas
+    const columns = {
+        todo: { id: 'todo', label: 'Triagem / Entrada', color: 'border-t-red-500', bg: 'bg-red-50/50', list: tickets.filter(t => t.status === 'todo') },
+        doing: { id: 'doing', label: 'Em Atendimento', color: 'border-t-blue-500', bg: 'bg-blue-50/50', list: tickets.filter(t => t.status === 'doing') },
+        done: { id: 'done', label: 'Finalizados', color: 'border-t-green-500', bg: 'bg-green-50/50', list: tickets.filter(t => t.status === 'done') }
+    };
 
+    const handleDragEnd = async (result) => {
+        const { destination, source, draggableId } = result;
+
+        if (!destination) return;
+        if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+        const ticketId = draggableId;
+        const newStatus = destination.droppableId;
+        const oldStatus = source.droppableId;
+
+        // Optimistic UI update (optional, but skipping for simplicity as we refresh)
+
+        try {
+            // Lógica de Negócio ao Mover
+            if (newStatus === 'doing' && oldStatus !== 'doing') {
+                // Assumir Ticket
+                const res = await fetch(`${API_URL}/tickets/${ticketId}/assign`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ userId: currentUser.id })
+                });
+                if(!res.ok) throw new Error("Erro ao assumir");
+
+                // Desativa IA
+                const ticket = tickets.find(t => t.id === ticketId);
+                if(ticket) {
+                    await fetch(`${API_URL}/contacts/${ticket.contactId}/toggle-ai`, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ isAiActive: false })
+                    });
+                }
+                addToast("Chamado assumido!", "success");
+
+            } else if (newStatus === 'done' && oldStatus !== 'done') {
+                const res = await fetch(`${API_URL}/tickets/${ticketId}/close`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ closingNote: "Finalizado via Kanban" })
+                });
+                if(!res.ok) throw new Error("Erro ao finalizar");
+                addToast("Chamado finalizado.", "success");
+
+            } else if (newStatus === 'todo') {
+                const res = await fetch(`${API_URL}/tickets/${ticketId}`, {
+                    method: 'PUT', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ status: 'todo', assignedToId: null })
+                });
+                if(!res.ok) throw new Error("Erro ao mover");
+                addToast("Retornado para fila.", "info");
+            } else {
+                 const res = await fetch(`${API_URL}/tickets/${ticketId}`, {
+                    method: 'PUT', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if(!res.ok) throw new Error("Erro ao mover");
+            }
+
+            if (refreshData) refreshData();
+
+        } catch (e) {
+            console.error(e);
+            addToast("Erro ao mover card.", "error");
+            if (refreshData) refreshData(); // Reverte visual
+        }
+    };
+
+    const handleViewProfile = () => {
+        if (!selectedTicket) return;
+        setSelectedChatId(selectedTicket.contactId);
+        setActiveTab('chat');
+        setShowRightPanel(true);
+        setSelectedTicket(null);
+    };
+
+    // Actions
     const handleTakeOwnership = async () => {
         if(!selectedTicket) return;
         try {
@@ -54,10 +129,7 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, re
                 body: JSON.stringify({ isAiActive: false })
             });
             addToast("Você assumiu o chamado!", "success");
-            if(refreshData) refreshData();
-            setSelectedChatId(selectedTicket.contactId);
-            setActiveTab('chat');
-            setSelectedTicket(null);
+            handleViewProfile(); // Já redireciona
         } catch (e) { addToast("Erro ao assumir chamado.", "error"); }
     };
 
@@ -68,7 +140,7 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, re
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ closingNote })
             });
-            addToast("Chamado encerrado com sucesso.", "success");
+            addToast("Chamado encerrado.", "success");
             setShowCloseInput(false);
             setClosingNote("");
             setSelectedTicket(null);
@@ -80,43 +152,62 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, re
         <div className="flex-1 bg-gray-50/50 p-8 h-full overflow-y-auto flex flex-col relative font-sans">
             <h1 className="text-3xl font-bold text-gray-800 mb-8 tracking-tight">Central de Chamados</h1>
 
-            <div className="flex-1 overflow-x-auto pb-4">
-                <div className="flex gap-6 h-full min-w-[1000px]">
-                    {columns.map(col => (
-                        <div key={col.id} className="w-80 flex flex-col h-full">
-                            <div className={`flex justify-between items-center mb-4 px-3 py-2 rounded-lg ${col.bg} border border-transparent`}>
-                                <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide">{col.label}</h3>
-                                <span className="bg-white text-gray-600 text-xs px-2 py-0.5 rounded-full shadow-sm font-mono">{col.list.length}</span>
-                            </div>
-
-                            <div className="bg-gray-100/50 p-2 rounded-2xl h-full space-y-3 border border-gray-200 overflow-y-auto custom-scrollbar">
-                                {col.list.map(ticket => (
+            <DragDropContext onDragEnd={handleDragEnd}>
+                <div className="flex-1 overflow-x-auto pb-4">
+                    <div className="flex gap-6 h-full min-w-[1000px]">
+                        {Object.values(columns).map(col => (
+                            <Droppable key={col.id} droppableId={col.id}>
+                                {(provided, snapshot) => (
                                     <div
-                                        key={ticket.id}
-                                        onClick={() => { setSelectedTicket(ticket); setShowCloseInput(false); }}
-                                        className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer relative group ${col.color} border-t-4 active:scale-[0.98]`}
+                                        ref={provided.innerRef}
+                                        {...provided.droppableProps}
+                                        className={`w-80 flex flex-col h-full rounded-2xl transition-colors ${snapshot.isDraggingOver ? 'bg-blue-50/50 ring-2 ring-blue-100' : ''}`}
                                     >
-                                        <div className="flex justify-between items-start mb-3">
-                                            <span className="text-[10px] text-gray-400 font-mono bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">#{ticket.id.slice(0,6)}</span>
-                                            {ticket.priority === 'high' && <AlertTriangle size={14} className="text-red-500 animate-pulse" />}
+                                        <div className={`flex justify-between items-center mb-4 px-3 py-2 rounded-lg ${col.bg} border border-transparent`}>
+                                            <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide">{col.label}</h3>
+                                            <span className="bg-white text-gray-600 text-xs px-2 py-0.5 rounded-full shadow-sm font-mono">{col.list.length}</span>
                                         </div>
-                                        <div className="mb-4">
-                                            <h4 className="font-bold text-gray-800 text-sm leading-tight mb-1">{ticket.contactName || 'Desconhecido'}</h4>
-                                            <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{ticket.title}</p>
-                                        </div>
-                                        <div className="flex items-center justify-between mt-auto">
-                                            <div className="flex gap-2">
-                                                {ticket.department && <DepartmentBadge name={ticket.department.name} />}
-                                            </div>
-                                            {ticket.summary && <div className="text-orange-500" title="Relatório IA"><FileText size={14}/></div>}
+
+                                        <div className="bg-gray-100/50 p-2 rounded-2xl h-full space-y-3 border border-gray-200 overflow-y-auto custom-scrollbar min-h-[200px]">
+                                            {col.list.map((ticket, index) => (
+                                                <Draggable key={ticket.id} draggableId={ticket.id} index={index}>
+                                                    {(provided, snapshot) => (
+                                                        <div
+                                                            ref={provided.innerRef}
+                                                            {...provided.draggableProps}
+                                                            {...provided.dragHandleProps}
+                                                            onClick={() => { setSelectedTicket(ticket); setShowCloseInput(false); }}
+                                                            className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer relative group ${col.color} border-t-4 active:scale-[0.98]
+                                                                ${snapshot.isDragging ? 'shadow-xl rotate-2 ring-2 ring-blue-400 z-50' : ''}`}
+                                                            style={{ ...provided.draggableProps.style }}
+                                                        >
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <span className="text-[10px] text-gray-400 font-mono bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">#{ticket.id.slice(0,6)}</span>
+                                                                {ticket.priority === 'high' && <AlertTriangle size={14} className="text-red-500 animate-pulse" />}
+                                                            </div>
+                                                            <div className="mb-4">
+                                                                <h4 className="font-bold text-gray-800 text-sm leading-tight mb-1">{ticket.contactName || 'Desconhecido'}</h4>
+                                                                <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{ticket.title}</p>
+                                                            </div>
+                                                            <div className="flex items-center justify-between mt-auto">
+                                                                <div className="flex gap-2">
+                                                                    {ticket.department && <DepartmentBadge name={ticket.department.name} />}
+                                                                </div>
+                                                                {ticket.summary && <div className="text-orange-500" title="Relatório IA"><FileText size={14}/></div>}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </Draggable>
+                                            ))}
+                                            {provided.placeholder}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
+                                )}
+                            </Droppable>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            </DragDropContext>
 
             {selectedTicket && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 animate-in fade-in duration-300">
@@ -127,15 +218,18 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, re
                         </div>
 
                         <div className="p-8 overflow-y-auto custom-scrollbar">
-                            <div className="mb-8">
-                                <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedTicket.contactName}</h2>
-                                <p className="text-gray-600">{selectedTicket.title}</p>
+                            <div className="flex justify-between items-start mb-8">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedTicket.contactName}</h2>
+                                    <p className="text-gray-600">{selectedTicket.title}</p>
+                                </div>
+                                <button onClick={handleViewProfile} className="flex items-center gap-2 text-blue-600 font-bold text-sm bg-blue-50 px-3 py-2 rounded-lg hover:bg-blue-100 transition">
+                                    <User size={16}/> Ver Perfil Completo
+                                </button>
                             </div>
 
-                            {selectedTicket.summary ? (
+                            {selectedTicket.summary && (
                                 <TriageReportCard report={selectedTicket.summary} />
-                            ) : (
-                                <div className="text-center py-10 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200"><Bot size={32} className="mx-auto mb-3 opacity-30"/><p>Ainda sem relatório gerado.</p></div>
                             )}
 
                             <div className="mt-8 pt-8 border-t border-gray-100 space-y-4">
@@ -147,7 +241,7 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, re
 
                                 {selectedTicket.status === 'doing' && !showCloseInput && (
                                     <div className="grid grid-cols-2 gap-4">
-                                        <button onClick={() => { setSelectedChatId(selectedTicket.contactId); setActiveTab('chat'); setSelectedTicket(null); }} className="col-span-1 bg-white text-blue-700 py-3 rounded-xl font-bold text-sm hover:bg-blue-50 transition flex items-center justify-center gap-2 border border-blue-200 shadow-sm">
+                                        <button onClick={handleViewProfile} className="col-span-1 bg-white text-blue-700 py-3 rounded-xl font-bold text-sm hover:bg-blue-50 transition flex items-center justify-center gap-2 border border-blue-200 shadow-sm">
                                             <MessageSquare size={16}/> Ir para Chat
                                         </button>
                                         <button onClick={() => setShowCloseInput(true)} className="col-span-1 bg-green-50 text-green-700 py-3 rounded-xl font-bold text-sm hover:bg-green-100 transition flex items-center justify-center gap-2 border border-green-200 shadow-sm">
