@@ -3,7 +3,8 @@ import { Send, MoreVertical, Bot, User, Trash2, Edit2, Phone, Video, Paperclip, 
 import MessageBubble from './MessageBubble';
 import TriageReportCard from '../tickets/TriageReportCard';
 import { useToast } from '../ui/Toast';
-import { API_URL } from '../../config';
+import { API_URL, SOCKET_URL } from '../../config';
+import { io } from 'socket.io-client';
 
 const StatusBadge = ({ isAiActive }) => (
     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 w-max ${
@@ -23,9 +24,35 @@ const ChatWindow = ({
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
+    const [isTyping, setIsTyping] = useState(false); // Contact typing
+    const token = localStorage.getItem('authToken');
     const fileInputRef = useRef(null);
     const mediaRecorderRef = useRef(null);
     const { addToast } = useToast();
+
+    // Typing Listener
+    useEffect(() => {
+        if(!activeContact) return;
+        const socket = io(SOCKET_URL);
+
+        socket.on('chat:typing', (data) => {
+            if (data.contactId === activeContact.id) {
+                setIsTyping(true);
+                setTimeout(() => setIsTyping(false), 3000);
+            }
+        });
+
+        return () => socket.disconnect();
+    }, [activeContact]);
+
+    // Send Typing
+    const handleTyping = () => {
+        fetch(`${API_URL}/typing`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ contactId: activeContact.id })
+        }).catch(() => {});
+    };
 
     // --- AUDIO RECORDER ---
     const startRecording = async () => {
@@ -45,13 +72,17 @@ const ChatWindow = ({
                 formData.append('file', file);
 
                 try {
-                    const res = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
+                    const res = await fetch(`${API_URL}/upload`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
                     if (!res.ok) throw new Error("Falha no upload");
                     const data = await res.json();
 
                     await fetch(`${API_URL}/send`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                         body: JSON.stringify({
                             contactId: activeContact.id,
                             text: '',
@@ -96,7 +127,11 @@ const ChatWindow = ({
         formData.append('file', file);
 
         try {
-            const res = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
+            const res = await fetch(`${API_URL}/upload`, {
+                method: 'POST',
+                body: formData,
+                headers: { Authorization: `Bearer ${token}` }
+            });
             if (!res.ok) throw new Error("Falha no upload");
 
             const data = await res.json();
@@ -109,7 +144,7 @@ const ChatWindow = ({
             // Envia mensagem com mídia
             await fetch(`${API_URL}/send`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
                     contactId: activeContact.id,
                     text: mediaType === 'document' ? file.name : '', // Nome do arquivo se for doc
@@ -152,6 +187,7 @@ const ChatWindow = ({
                     <div className="flex flex-col">
                         <h2 className="font-bold text-gray-900 text-lg leading-tight">{activeContact.name}</h2>
                         <span className="text-xs text-gray-500 font-mono opacity-80">{activeContact.id}</span>
+                        {isTyping && <span className="text-xs text-green-600 font-medium animate-pulse">Digitando...</span>}
                     </div>
                 </div>
 
@@ -223,7 +259,7 @@ const ChatWindow = ({
 
                     <textarea
                         value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
+                        onChange={(e) => { setInputText(e.target.value); handleTyping(); }}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();

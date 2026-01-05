@@ -16,18 +16,19 @@ const UserManagement = () => {
     const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'AGENT', departmentId: '' });
     const [newDept, setNewDept] = useState('');
     const { addToast } = useToast();
+    const token = localStorage.getItem('authToken');
 
     useEffect(() => { fetchData(); }, []);
 
     const fetchData = () => {
-        fetch(`${API_URL}/users`).then(r => r.json()).then(setUsers);
-        fetch(`${API_URL}/departments`).then(r => r.json()).then(setDepts);
+        fetch(`${API_URL}/users`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(setUsers);
+        fetch(`${API_URL}/departments`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(setDepts);
     }
 
     const handleCreateUser = async (e) => {
         e.preventDefault();
         try {
-            await fetch(`${API_URL}/users`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(formData) });
+            await fetch(`${API_URL}/users`, { method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`}, body: JSON.stringify(formData) });
             addToast("Usuário criado com sucesso!", "success");
             setFormData({ name: '', email: '', password: '', role: 'AGENT', departmentId: '' });
             fetchData();
@@ -37,7 +38,7 @@ const UserManagement = () => {
     const handleCreateDept = async () => {
         if(!newDept) return;
         try {
-            await fetch(`${API_URL}/departments`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name: newDept}) });
+            await fetch(`${API_URL}/departments`, { method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`}, body: JSON.stringify({name: newDept}) });
             setNewDept('');
             fetchData();
             addToast("Setor criado!", "success");
@@ -47,7 +48,7 @@ const UserManagement = () => {
     const handleDeleteUser = async (id) => {
         if(!confirm("Remover usuário?")) return;
         try {
-            const res = await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_URL}/users/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
             if (!res.ok) throw new Error("Falha");
             fetchData();
             addToast("Usuário removido", "success");
@@ -57,7 +58,7 @@ const UserManagement = () => {
     const handleDeleteDept = async (id) => {
         if(!confirm("Remover setor?")) return;
         try {
-            const res = await fetch(`${API_URL}/departments/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_URL}/departments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
             if (!res.ok) throw new Error("Falha");
             fetchData();
             addToast("Setor removido", "success");

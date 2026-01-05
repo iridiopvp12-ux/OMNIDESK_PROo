@@ -1,9 +1,14 @@
 import { Request, Response } from 'express';
 import { prisma } from '../services/prisma';
+import jwt from 'jsonwebtoken';
 
 export class AuthController {
     static async login(req: Request, res: Response) {
         const { email, password } = req.body;
+
+        const generateToken = (id: string) => {
+            return jwt.sign({ id }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+        };
 
         // MVP: Se for o login mestre hardcoded (fallback)
         if (email === 'admin' && password === 'admin') {
@@ -19,7 +24,7 @@ export class AuthController {
                     }
                  });
              }
-             return res.json({ user: admin });
+             return res.json({ user: admin, token: generateToken(admin.id) });
         }
 
         try {
@@ -27,7 +32,7 @@ export class AuthController {
             if (!user || user.password !== password) {
                 return res.status(401).json({ error: "Credenciais inválidas" });
             }
-            res.json({ user });
+            res.json({ user, token: generateToken(user.id) });
         } catch (e) {
             res.status(500).json({ error: "Erro no login" });
         }

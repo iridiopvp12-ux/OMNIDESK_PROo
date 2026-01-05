@@ -8,8 +8,10 @@ const Dashboard = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    const token = localStorage.getItem('authToken');
+
     useEffect(() => {
-        fetch(`${API_URL}/dashboard/stats`)
+        fetch(`${API_URL}/dashboard/stats`, { headers: { Authorization: `Bearer ${token}` } })
             .then(r => r.json())
             .then(setStats)
             .catch(console.error);
@@ -25,7 +27,7 @@ const Dashboard = () => {
 
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/dashboard/search?q=${term}`);
+            const res = await fetch(`${API_URL}/dashboard/search?q=${term}`, { headers: { Authorization: `Bearer ${token}` } });
             const data = await res.json();
             setSearchResults(data);
         } catch (error) {

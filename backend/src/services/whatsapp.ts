@@ -6,6 +6,7 @@ import qrcode from 'qrcode-terminal';
 import fs from 'fs/promises';
 import path from 'path';
 import mime from 'mime-types';
+import { getIO } from './socket';
 
 let sock: any; 
 
@@ -43,6 +44,27 @@ export const startWhatsApp = async () => {
     });
 
     // --- PROCESSAMENTO DE MENSAGENS ---
+    // --- PRESENCE & STATUS EVENTS ---
+    sock.ev.on('presence.update', (data: any) => {
+        if (data.presences) {
+            Object.keys(data.presences).forEach(remoteJid => {
+                const presence = data.presences[remoteJid];
+                if (presence.lastKnownPresence === 'composing') {
+                    getIO().emit('chat:typing', { contactId: remoteJid });
+                }
+            });
+        }
+    });
+
+    sock.ev.on('messages.update', (updates: any) => {
+        for (const update of updates) {
+            getIO().emit('message:status', {
+                id: update.key.id,
+                status: update.update.status // 3=sent, 4=delivered, 5=read
+            });
+        }
+    });
+
     sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
         if (type !== 'notify') return;
 

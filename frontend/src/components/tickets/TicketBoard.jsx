@@ -16,6 +16,7 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
     const [closingNote, setClosingNote] = useState("");
     const [showCloseInput, setShowCloseInput] = useState(false);
     const { addToast } = useToast();
+    const token = localStorage.getItem('authToken');
 
     // Organiza colunas
     const columns = {
@@ -41,7 +42,7 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
             if (newStatus === 'doing' && oldStatus !== 'doing') {
                 // Assumir Ticket
                 const res = await fetch(`${API_URL}/tickets/${ticketId}/assign`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
                     body: JSON.stringify({ userId: currentUser.id })
                 });
                 if(!res.ok) throw new Error("Erro ao assumir");
@@ -50,7 +51,7 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
                 const ticket = tickets.find(t => t.id === ticketId);
                 if(ticket) {
                     const resAi = await fetch(`${API_URL}/contacts/${ticket.contactId}/toggle-ai`, {
-                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
                         body: JSON.stringify({ isAiActive: false })
                     });
                     if(!resAi.ok) console.error("Erro ao desativar IA");
@@ -59,7 +60,7 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
 
             } else if (newStatus === 'done' && oldStatus !== 'done') {
                 const res = await fetch(`${API_URL}/tickets/${ticketId}/close`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
                     body: JSON.stringify({ closingNote: "Finalizado via Kanban" })
                 });
                 if(!res.ok) throw new Error("Erro ao finalizar");
@@ -67,14 +68,14 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
 
             } else if (newStatus === 'todo') {
                 const res = await fetch(`${API_URL}/tickets/${ticketId}`, {
-                    method: 'PUT', headers: {'Content-Type': 'application/json'},
+                    method: 'PUT', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
                     body: JSON.stringify({ status: 'todo', assignedToId: null })
                 });
                 if(!res.ok) throw new Error("Erro ao mover");
                 addToast("Retornado para fila.", "info");
             } else {
                  const res = await fetch(`${API_URL}/tickets/${ticketId}`, {
-                    method: 'PUT', headers: {'Content-Type': 'application/json'},
+                    method: 'PUT', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
                     body: JSON.stringify({ status: newStatus })
                 });
                 if(!res.ok) throw new Error("Erro ao mover");
@@ -102,11 +103,11 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
         if(!selectedTicket) return;
         try {
             await fetch(`${API_URL}/tickets/${selectedTicket.id}/assign`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
+                method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
                 body: JSON.stringify({ userId: currentUser.id })
             });
             const resAi = await fetch(`${API_URL}/contacts/${selectedTicket.contactId}/toggle-ai`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
+                method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
                 body: JSON.stringify({ isAiActive: false })
             });
             if(!resAi.ok) console.error("Erro ao desativar IA");
@@ -119,7 +120,7 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
         if(!selectedTicket) return;
         try {
             await fetch(`${API_URL}/tickets/${selectedTicket.id}/close`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
+                method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
                 body: JSON.stringify({ closingNote })
             });
             addToast("Chamado encerrado.", "success");
@@ -215,7 +216,7 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
                                     <button onClick={async () => {
                                         if(!confirm("Excluir chamado?")) return;
                                         try {
-                                            const res = await fetch(`${API_URL}/tickets/${selectedTicket.id}`, { method: 'DELETE' });
+                                            const res = await fetch(`${API_URL}/tickets/${selectedTicket.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
                                             if(!res.ok) throw new Error("Erro");
                                             addToast("Chamado excluído", "success");
                                             setSelectedTicket(null);

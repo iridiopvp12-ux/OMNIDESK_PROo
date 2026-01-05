@@ -12,7 +12,8 @@ import { io } from 'socket.io-client';
 
 // Wrapper para usar o hook de Toast dentro do App
 const AppContent = () => {
-  const [currentUser, setCurrentUser] = useState(null); 
+  const [currentUser, setCurrentUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('authToken'));
   const [contacts, setContacts] = useState([]); 
   const [tickets, setTickets] = useState([]); 
   const [selectedChatId, setSelectedChatId] = useState(null);
@@ -34,7 +35,7 @@ const AppContent = () => {
   const fetchContacts = useCallback(async () => {
     if (!currentUser) return;
     try {
-      const res = await fetch(`${API_URL}/contacts`);
+      const res = await fetch(`${API_URL}/contacts`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (!Array.isArray(data)) return;
       const formattedContacts = data.map(c => ({
@@ -53,7 +54,7 @@ const AppContent = () => {
   const fetchTickets = useCallback(async () => {
     if (!currentUser) return;
     try {
-        const res = await fetch(`${API_URL}/tickets`);
+        const res = await fetch(`${API_URL}/tickets`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         if (Array.isArray(data)) {
             setTickets(data.map(t => ({...t, contactName: t.contact?.name || t.contactId})));
@@ -64,7 +65,7 @@ const AppContent = () => {
   const fetchMessages = useCallback(async () => {
       if (!selectedChatId) return;
       try {
-        const res = await fetch(`${API_URL}/messages/${selectedChatId}`);
+        const res = await fetch(`${API_URL}/messages/${selectedChatId}`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         if (!Array.isArray(data)) return;
         const formattedMessages = data.map(m => ({
@@ -147,7 +148,7 @@ const AppContent = () => {
     setMessages(prevMessages => [...prevMessages, optimisticMsg]);
     setIsScrolledUp(false); 
     try {
-      await fetch(`${API_URL}/send`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contactId: selectedChatId, text: textToSend }) });
+      await fetch(`${API_URL}/send`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ contactId: selectedChatId, text: textToSend }) });
     } catch (error) { setMessages(prevMessages => prevMessages.filter(m => m.id !== optimisticMsg.id)); addToast("Erro ao enviar mensagem", "error"); }
   };
 
@@ -158,7 +159,7 @@ const AppContent = () => {
     const newState = !contact.isAiActive;
     try {
         setContacts(prev => prev.map(c => c.id === selectedChatId ? { ...c, isAiActive: newState } : c));
-        await fetch(`${API_URL}/contacts/${selectedChatId}/toggle-ai`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isAiActive: newState }) });
+        await fetch(`${API_URL}/contacts/${selectedChatId}/toggle-ai`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ isAiActive: newState }) });
         addToast(newState ? "IA ativada para este contato" : "IA desativada. Modo manual.", "info");
     } catch (error) { addToast("Erro ao alterar estado da IA", "error"); }
   };
@@ -169,7 +170,7 @@ const AppContent = () => {
       if (newName && newName !== activeContact.name) {
           try {
               const res = await fetch(`${API_URL}/contacts/${activeContact.id}`, {
-                  method: 'PUT', headers: {'Content-Type': 'application/json'},
+                  method: 'PUT', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${token}`},
                   body: JSON.stringify({ name: newName })
               });
               if (!res.ok) throw new Error("Falha na atualização");
@@ -182,7 +183,7 @@ const AppContent = () => {
   const handleDeleteContact = async () => {
       if(confirm("Tem certeza? Isso apagará todo o histórico e tickets deste contato.")) {
           try {
-              const res = await fetch(`${API_URL}/contacts/${activeContact.id}`, { method: 'DELETE' });
+              const res = await fetch(`${API_URL}/contacts/${activeContact.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
               if (!res.ok) throw new Error("Falha na exclusão");
               addToast("Conversa excluída.", "success");
               setSelectedChatId(null);
@@ -191,7 +192,11 @@ const AppContent = () => {
       }
   };
 
-  if (!currentUser) return <Login onLogin={setCurrentUser} />;
+  if (!currentUser) return <Login onLogin={(user, token) => {
+      setCurrentUser(user);
+      setToken(token);
+      localStorage.setItem('authToken', token);
+  }} />;
 
   return (
     <div className="flex h-screen w-full font-sans bg-gray-100 overflow-hidden text-gray-900">
