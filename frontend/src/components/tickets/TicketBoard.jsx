@@ -49,10 +49,11 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
                 // Desativa IA
                 const ticket = tickets.find(t => t.id === ticketId);
                 if(ticket) {
-                    await fetch(`${API_URL}/contacts/${ticket.contactId}/toggle-ai`, {
+                    const resAi = await fetch(`${API_URL}/contacts/${ticket.contactId}/toggle-ai`, {
                         method: 'POST', headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ isAiActive: false })
                     });
+                    if(!resAi.ok) console.error("Erro ao desativar IA");
                 }
                 addToast("Chamado assumido!", "success");
 
@@ -104,10 +105,11 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ userId: currentUser.id })
             });
-            await fetch(`${API_URL}/contacts/${selectedTicket.contactId}/toggle-ai`, {
+            const resAi = await fetch(`${API_URL}/contacts/${selectedTicket.contactId}/toggle-ai`, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ isAiActive: false })
             });
+            if(!resAi.ok) console.error("Erro ao desativar IA");
             addToast("Você assumiu o chamado!", "success");
             handleViewProfile(); // Já redireciona
         } catch (e) { addToast("Erro ao assumir chamado.", "error"); }

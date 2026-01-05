@@ -47,7 +47,8 @@ const UserManagement = () => {
     const handleDeleteUser = async (id) => {
         if(!confirm("Remover usuário?")) return;
         try {
-            await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error("Falha");
             fetchData();
             addToast("Usuário removido", "success");
         } catch(e) { addToast("Erro ao remover", "error"); }
@@ -56,7 +57,8 @@ const UserManagement = () => {
     const handleDeleteDept = async (id) => {
         if(!confirm("Remover setor?")) return;
         try {
-            await fetch(`${API_URL}/departments/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_URL}/departments/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error("Falha");
             fetchData();
             addToast("Setor removido", "success");
         } catch(e) { addToast("Erro ao remover", "error"); }
