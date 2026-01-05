@@ -1,10 +1,11 @@
 import React from 'react';
-import { MessageSquare, Ticket, Users, LogOut } from 'lucide-react';
+import { MessageSquare, Ticket, Users, LogOut, PieChart } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
     const tabs = [
         { id: 'chat', icon: MessageSquare, label: 'Chats' },
         { id: 'tickets', icon: Ticket, label: 'Chamados' },
+        { id: 'dashboard', icon: PieChart, label: 'Dashboard' },
         { id: 'users', icon: Users, label: 'Equipe' },
     ];
 

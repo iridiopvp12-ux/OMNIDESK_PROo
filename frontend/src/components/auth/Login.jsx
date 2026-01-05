@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bot, User, Lock, ArrowRight } from 'lucide-react';
 import { useToast } from '../ui/Toast';
+import { API_URL } from '../../config';
 
 const Login = ({ onLogin }) => {
     const [email, setEmail] = useState('');
@@ -12,23 +13,25 @@ const Login = ({ onLogin }) => {
         e.preventDefault();
         setLoading(true);
 
-        // Simulação de login - no mundo real bateríamos na API
-        // const res = await fetch(`${API_URL}/auth/login`, ...);
+        try {
+            const res = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
 
-        setTimeout(() => {
-            if (email) {
-                onLogin({
-                    id: "admin-master",
-                    name: "Administrador",
-                    role: "ADMIN",
-                    departmentId: null
-                });
-                addToast("Bem-vindo de volta!", "success");
+            if (res.ok && data.user) {
+                onLogin(data.user);
+                addToast(`Bem-vindo, ${data.user.name}!`, "success");
             } else {
-                addToast("Preencha os campos corretamente.", "error");
+                addToast(data.error || "Login falhou", "error");
                 setLoading(false);
             }
-        }, 1000);
+        } catch (error) {
+            addToast("Erro de conexão", "error");
+            setLoading(false);
+        }
     };
 
     return (

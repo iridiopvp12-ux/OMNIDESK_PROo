@@ -5,15 +5,22 @@ export class TicketController {
     // Listar Tickets (Kanban)
     static async index(req: Request, res: Response) {
         try {
-            const tickets = await prisma.ticket.findMany({
-                include: {
-                    contact: true,
-                    department: true,
-                    assignedTo: true
-                },
+            // Busca TODOS que não são 'done'
+            const activeTickets = await prisma.ticket.findMany({
+                where: { status: { not: 'done' } },
+                include: { contact: true, department: true, assignedTo: true },
                 orderBy: { createdAt: 'desc' }
             });
-            res.json(tickets);
+
+            // Busca os últimos 10 'done' para não poluir
+            const doneTickets = await prisma.ticket.findMany({
+                where: { status: 'done' },
+                take: 10,
+                include: { contact: true, department: true, assignedTo: true },
+                orderBy: { updatedAt: 'desc' }
+            });
+
+            res.json([...activeTickets, ...doneTickets]);
         } catch (e) {
             console.error(e);
             res.status(500).json({ error: "Erro ao buscar tickets" });

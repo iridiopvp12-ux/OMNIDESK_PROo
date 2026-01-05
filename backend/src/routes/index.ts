@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ticketRoutes } from './ticket.routes';
 import { contactRoutes } from './contact.routes';
 import { authRoutes } from './auth.routes';
+import { dashboardRoutes } from './dashboard.routes';
 import { upload } from '../services/upload';
 
 const router = Router();
@@ -22,6 +23,9 @@ router.use("/", authRoutes);
 
 // Ticket Routes: /api/tickets
 router.use("/tickets", ticketRoutes);
+
+// Dashboard Routes: /api/dashboard
+router.use("/dashboard", dashboardRoutes);
 
 // Contact Routes: /api/contacts (base)
 // Mas temos GET /api/messages/:contactId e POST /api/send que não começam com /contacts.

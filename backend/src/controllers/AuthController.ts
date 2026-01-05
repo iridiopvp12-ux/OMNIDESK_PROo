@@ -3,15 +3,34 @@ import { prisma } from '../services/prisma';
 
 export class AuthController {
     static async login(req: Request, res: Response) {
-        // Login Mock para o MVP
-        res.json({
-            user: {
-                id: "admin-master",
-                name: "Administrador",
-                role: "ADMIN",
-                departmentId: null
+        const { email, password } = req.body;
+
+        // MVP: Se for o login mestre hardcoded (fallback)
+        if (email === 'admin' && password === 'admin') {
+             // Tenta achar ou cria um admin padrão no banco para garantir ID válido
+             let admin = await prisma.user.findUnique({ where: { email: 'admin@omnidesk.com' }});
+             if (!admin) {
+                 admin = await prisma.user.create({
+                     data: {
+                         name: "Administrador",
+                         email: "admin@omnidesk.com",
+                         password: "admin",
+                         role: "ADMIN"
+                    }
+                 });
+             }
+             return res.json({ user: admin });
+        }
+
+        try {
+            const user = await prisma.user.findUnique({ where: { email } });
+            if (!user || user.password !== password) {
+                return res.status(401).json({ error: "Credenciais inválidas" });
             }
-        });
+            res.json({ user });
+        } catch (e) {
+            res.status(500).json({ error: "Erro no login" });
+        }
     }
 
     static async listUsers(req: Request, res: Response) {
