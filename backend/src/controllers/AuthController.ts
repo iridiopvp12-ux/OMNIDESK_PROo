@@ -62,6 +62,12 @@ export class AuthController {
 
     static async deleteUser(req: Request, res: Response) {
         try {
+            // Desvincula tickets antes de excluir
+            await prisma.ticket.updateMany({
+                where: { assignedToId: req.params.id },
+                data: { assignedToId: null, status: 'todo' } // Volta pra fila
+            });
+
             await prisma.user.delete({ where: { id: req.params.id } });
             res.json({ success: true });
         } catch (e) { res.status(500).json({ error: "Erro ao excluir usuário" }); }
@@ -69,6 +75,16 @@ export class AuthController {
 
     static async deleteDepartment(req: Request, res: Response) {
         try {
+            // Desvincula usuários e tickets
+            await prisma.user.updateMany({
+                where: { departmentId: req.params.id },
+                data: { departmentId: null }
+            });
+            await prisma.ticket.updateMany({
+                where: { departmentId: req.params.id },
+                data: { departmentId: null }
+            });
+
             await prisma.department.delete({ where: { id: req.params.id } });
             res.json({ success: true });
         } catch (e) { res.status(500).json({ error: "Erro ao excluir setor" }); }
