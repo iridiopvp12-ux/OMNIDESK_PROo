@@ -94,4 +94,14 @@ export class TicketController {
             res.status(500).json({ error: "Erro ao atualizar ticket" });
         }
     }
+
+    // Deletar Ticket
+    static async delete(req: Request, res: Response) {
+        try {
+            await prisma.ticket.delete({ where: { id: req.params.id } });
+            res.json({ success: true });
+        } catch (e) {
+            res.status(500).json({ error: "Erro ao excluir ticket" });
+        }
+    }
 }

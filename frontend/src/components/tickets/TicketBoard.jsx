@@ -206,9 +206,23 @@ const TicketBoard = ({ tickets, currentUser, setActiveTab, setSelectedChatId, se
                                     <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedTicket.contactName}</h2>
                                     <p className="text-gray-600">{selectedTicket.title}</p>
                                 </div>
-                                <button onClick={handleViewProfile} className="flex items-center gap-2 text-blue-600 font-bold text-sm bg-blue-50 px-3 py-2 rounded-lg hover:bg-blue-100 transition">
-                                    <User size={16}/> Ver Perfil Completo
-                                </button>
+                                <div className="flex gap-2">
+                                    <button onClick={handleViewProfile} className="flex items-center gap-2 text-blue-600 font-bold text-sm bg-blue-50 px-3 py-2 rounded-lg hover:bg-blue-100 transition">
+                                        <User size={16}/> Ver Perfil
+                                    </button>
+                                    <button onClick={async () => {
+                                        if(!confirm("Excluir chamado?")) return;
+                                        try {
+                                            const res = await fetch(`${API_URL}/tickets/${selectedTicket.id}`, { method: 'DELETE' });
+                                            if(!res.ok) throw new Error("Erro");
+                                            addToast("Chamado excluído", "success");
+                                            setSelectedTicket(null);
+                                            refreshData();
+                                        } catch(e) { addToast("Erro ao excluir", "error"); }
+                                    }} className="flex items-center gap-2 text-red-600 font-bold text-sm bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100 transition">
+                                        <X size={16}/> Excluir
+                                    </button>
+                                </div>
                             </div>
 
                             {selectedTicket.summary && (

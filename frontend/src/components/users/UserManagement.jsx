@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, Building2 } from 'lucide-react';
+import { PlusCircle, Building2, Trash2, X } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { API_URL } from '../../config';
 
-const DepartmentBadge = ({ name }) => (
-    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1 w-max uppercase">
+const DepartmentBadge = ({ name, onDelete }) => (
+    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1 w-max uppercase group">
         <Building2 size={10}/> {name}
+        {onDelete && <button onClick={onDelete} className="ml-1 text-purple-900 hover:text-red-600"><X size={10}/></button>}
     </span>
 );
 
@@ -41,6 +42,24 @@ const UserManagement = () => {
             fetchData();
             addToast("Setor criado!", "success");
         } catch(e) { addToast("Erro ao criar setor", "error"); }
+    }
+
+    const handleDeleteUser = async (id) => {
+        if(!confirm("Remover usuário?")) return;
+        try {
+            await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+            fetchData();
+            addToast("Usuário removido", "success");
+        } catch(e) { addToast("Erro ao remover", "error"); }
+    }
+
+    const handleDeleteDept = async (id) => {
+        if(!confirm("Remover setor?")) return;
+        try {
+            await fetch(`${API_URL}/departments/${id}`, { method: 'DELETE' });
+            fetchData();
+            addToast("Setor removido", "success");
+        } catch(e) { addToast("Erro ao remover", "error"); }
     }
 
     return (
@@ -79,7 +98,7 @@ const UserManagement = () => {
                         <button onClick={handleCreateDept} className="bg-purple-600 text-white px-4 rounded-xl hover:bg-purple-700 shadow-lg shadow-purple-600/20 transition"><PlusCircle/></button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        {depts.map(d => <span key={d.id} className="bg-gray-100 px-3 py-1.5 rounded-lg text-sm text-gray-700 border border-gray-200">{d.name}</span>)}
+                        {depts.map(d => <DepartmentBadge key={d.id} name={d.name} onDelete={() => handleDeleteDept(d.id)} />)}
                     </div>
                 </div>
             </div>
@@ -92,6 +111,7 @@ const UserManagement = () => {
                             <th className="p-5 border-b border-gray-100">Email</th>
                             <th className="p-5 border-b border-gray-100">Setor</th>
                             <th className="p-5 border-b border-gray-100">Função</th>
+                            <th className="p-5 border-b border-gray-100 text-right">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -101,6 +121,9 @@ const UserManagement = () => {
                                 <td className="p-5 text-gray-500">{u.email}</td>
                                 <td className="p-5">{u.department ? <DepartmentBadge name={u.department.name} /> : <span className="text-gray-300">-</span>}</td>
                                 <td className="p-5"><span className={`text-[10px] font-bold px-2 py-1 rounded-md ${u.role === 'ADMIN' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>{u.role}</span></td>
+                                <td className="p-5 text-right">
+                                    <button onClick={() => handleDeleteUser(u.id)} className="text-red-400 hover:text-red-600 transition"><Trash2 size={18}/></button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
