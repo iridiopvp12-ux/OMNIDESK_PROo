@@ -93,6 +93,19 @@ app.post("/api/tickets/:ticketId/transfer", async (req, res) => {
     }
 });
 
+// ATUALIZAR STATUS/CAMPOS DO TICKET (GENÉRICO)
+app.put("/api/tickets/:id", async (req, res) => {
+    try {
+        const ticket = await prisma.ticket.update({
+            where: { id: req.params.id },
+            data: req.body // Atenção: Em prod, validar os campos!
+        });
+        res.json(ticket);
+    } catch (e) {
+        res.status(500).json({ error: "Erro ao atualizar ticket" });
+    }
+});
+
 // --- 2. ROTAS DE GESTÃO DE EQUIPE (ADMIN) ---
 
 app.get("/api/departments", async (req, res) => {

@@ -140,10 +140,11 @@ const AppContent = () => {
       const newName = prompt("Novo nome para o contato:", activeContact?.name);
       if (newName && newName !== activeContact.name) {
           try {
-              await fetch(`${API_URL}/contacts/${activeContact.id}`, {
+              const res = await fetch(`${API_URL}/contacts/${activeContact.id}`, {
                   method: 'PUT', headers: {'Content-Type': 'application/json'},
                   body: JSON.stringify({ name: newName })
               });
+              if (!res.ok) throw new Error("Falha na atualização");
               addToast("Contato atualizado!", "success");
               fetchContacts();
           } catch(e) { addToast("Erro ao atualizar contato", "error"); }
@@ -153,7 +154,8 @@ const AppContent = () => {
   const handleDeleteContact = async () => {
       if(confirm("Tem certeza? Isso apagará todo o histórico e tickets deste contato.")) {
           try {
-              await fetch(`${API_URL}/contacts/${activeContact.id}`, { method: 'DELETE' });
+              const res = await fetch(`${API_URL}/contacts/${activeContact.id}`, { method: 'DELETE' });
+              if (!res.ok) throw new Error("Falha na exclusão");
               addToast("Conversa excluída.", "success");
               setSelectedChatId(null);
               fetchContacts();
@@ -198,6 +200,7 @@ const AppContent = () => {
                 currentUser={currentUser}
                 setActiveTab={setActiveTab}
                 setSelectedChatId={setSelectedChatId}
+                setShowRightPanel={setShowRightPanel}
                 refreshData={() => { fetchTickets(); fetchContacts(); }}
             />
         )}
