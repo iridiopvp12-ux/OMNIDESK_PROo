@@ -24,6 +24,24 @@ export const logout = async () => {
     } catch (e) { console.error("Erro logout", e); }
 };
 
+export const resetSession = async () => {
+    try {
+        console.log("🔄 Resetando sessão WhatsApp...");
+        await logout();
+        sock = undefined;
+        qrCode = null;
+        connectionStatus = 'disconnected';
+
+        const authPath = path.resolve('./auth_info_baileys');
+        if (await fs.stat(authPath).catch(() => false)) {
+            await fs.rm(authPath, { recursive: true, force: true });
+            console.log("🗑️ Pasta de autenticação removida.");
+        }
+
+        startWhatsApp();
+    } catch (e) { console.error("Erro ao resetar sessão:", e); }
+};
+
 export const startWhatsApp = async () => {
     const { state, saveCreds } = await useMultiFileAuthState('./auth_info_baileys');
 
