@@ -1,0 +1,13 @@
+
+> backend@1.0.0 dev
+> ts-node src/server.ts
+
+[dotenv@17.2.3] injecting env (4) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+🛡️ API ONLINE: http://localhost:3001
+📁 Pasta de Uploads: /app/backend/uploads
+{"level":30,"time":"2026-01-06T11:03:39.546Z","pid":65783,"hostname":"devbox","class":"baileys","browser":["OmniDesk Pro","Chrome","2.0.0"],"helloMsg":{"clientHello":{"ephemeral":"+JvMViNyghBr6Q/lyHwu91UyiB5k+FmnhNgkylcJoUI="}},"msg":"connected to WA"}
+{"level":30,"time":"2026-01-06T11:03:39.678Z","pid":65783,"hostname":"devbox","class":"baileys","node":{"username":"5527999843440","passive":true,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1027934701},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","device":4,"pull":true,"lidDbMigrated":false},"msg":"logging in..."}
+{"level":30,"time":"2026-01-06T11:03:40.660Z","pid":65783,"hostname":"devbox","class":"baileys","trace":"Error: Connection Failure\n    at WebSocketClient.<anonymous> (file:///app/backend/node_modules/@whiskeysockets/baileys/src/Socket/socket.ts:964:7)\n    at WebSocketClient.emit (node:events:519:28)\n    at WebSocketClient.emit (node:domain:489:12)\n    at file:///app/backend/node_modules/@whiskeysockets/baileys/src/Socket/socket.ts:599:23\n    at Object.decodeFrame (file:///app/backend/node_modules/@whiskeysockets/baileys/src/Utils/noise-handler.ts:187:5)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async WebSocketClient.onMessageReceived (file:///app/backend/node_modules/@whiskeysockets/baileys/src/Socket/socket.ts:570:3)","msg":"connection errored"}
+❌ Conexão caiu. Reconectando... false
+Terminated
