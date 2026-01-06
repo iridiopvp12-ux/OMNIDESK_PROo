@@ -43,11 +43,12 @@ export const resetSession = async () => {
 };
 
 export const startWhatsApp = async () => {
+    console.log("🚀 Iniciando serviço WhatsApp...");
     const { state, saveCreds } = await useMultiFileAuthState('./auth_info_baileys');
 
     sock = makeWASocket({
         auth: state,
-        printQRInTerminal: false,
+        printQRInTerminal: true,
         defaultQueryTimeoutMs: undefined,
         browser: ["OmniDesk Pro", "Chrome", "2.0.0"]
     });
@@ -56,6 +57,8 @@ export const startWhatsApp = async () => {
 
     sock.ev.on('connection.update', (update: any) => {
         const { connection, lastDisconnect, qr } = update;
+
+        console.log("🔄 Connection Update:", JSON.stringify({ connection, qr: qr ? "QR_RECEIVED" : "NO_QR", status: connectionStatus }));
         
         if (qr) { 
             qrCode = qr;
