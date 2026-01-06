@@ -9,12 +9,22 @@ import mime from 'mime-types';
 import { getIO } from './socket';
 
 let sock: any; 
+let qrCode: string | null = null;
+let connectionStatus: 'connecting' | 'connected' | 'disconnected' = 'disconnected';
 
 export const getSocket = () => sock;
+export const getStatus = () => ({ status: connectionStatus, qr: qrCode });
+
+export const logout = async () => {
+    try {
+        await sock?.logout();
+        qrCode = null;
+        connectionStatus = 'disconnected';
+        getIO().emit('whatsapp:status', { status: 'disconnected' });
+    } catch (e) { console.error("Erro logout", e); }
+};
 
 export const startWhatsApp = async () => {
-    // Atenção: Use o nome da pasta que já existe no seu projeto. 
-    // Se for 'auth_baileys', mude abaixo.
     const { state, saveCreds } = await useMultiFileAuthState('./auth_info_baileys');
 
     sock = makeWASocket({
@@ -30,15 +40,25 @@ export const startWhatsApp = async () => {
         const { connection, lastDisconnect, qr } = update;
         
         if (qr) { 
-            console.log("📲 ESCANEIE O QR CODE ABAIXO:");
-            qrcode.generate(qr, { small: true }); 
+            qrCode = qr;
+            connectionStatus = 'connecting';
+            console.log("📲 Novo QR Code gerado");
+            getIO().emit('whatsapp:qr', qr);
+            getIO().emit('whatsapp:status', { status: 'connecting' });
         }
         
         if (connection === 'close') {
             const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+            connectionStatus = 'disconnected';
+            qrCode = null;
+            getIO().emit('whatsapp:status', { status: 'disconnected' });
+
             console.log('❌ Conexão caiu. Reconectando...', shouldReconnect);
             if (shouldReconnect) startWhatsApp();
         } else if (connection === 'open') {
+            connectionStatus = 'connected';
+            qrCode = null;
+            getIO().emit('whatsapp:status', { status: 'connected' });
             console.log('✅ WhatsApp Conectado com Sucesso!');
         }
     });

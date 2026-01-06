@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Ticket, Users, LogOut, PieChart } from 'lucide-react';
+import { MessageSquare, Ticket, Users, LogOut, PieChart, Settings } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
     const tabs = [
@@ -7,6 +7,7 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
         { id: 'tickets', icon: Ticket, label: 'Chamados' },
         { id: 'dashboard', icon: PieChart, label: 'Dashboard' },
         { id: 'users', icon: Users, label: 'Equipe' },
+        { id: 'settings', icon: Settings, label: 'Config' },
     ];
 
     return (
