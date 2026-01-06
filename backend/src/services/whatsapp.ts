@@ -32,10 +32,13 @@ export const resetSession = async () => {
         qrCode = null;
         connectionStatus = 'disconnected';
 
+        // Pequeno delay para garantir liberação de arquivos
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         const authPath = path.resolve('./auth_info_baileys');
         if (await fs.stat(authPath).catch(() => false)) {
             await fs.rm(authPath, { recursive: true, force: true });
-            console.log("🗑️ Pasta de autenticação removida.");
+            console.log("🗑️ Pasta de autenticação removida com sucesso.");
         }
 
         startWhatsApp();
@@ -44,11 +47,20 @@ export const resetSession = async () => {
 
 export const startWhatsApp = async () => {
     console.log("🚀 Iniciando serviço WhatsApp...");
+    const authPath = path.resolve('./auth_info_baileys');
+    const hasSession = await fs.stat(authPath).catch(() => false);
+
+    if (hasSession) {
+        console.log("📂 Sessão encontrada. Tentando restaurar conexão...");
+    } else {
+        console.log("🆕 Nenhuma sessão encontrada. Aguardando geração de QR Code...");
+    }
+
     const { state, saveCreds } = await useMultiFileAuthState('./auth_info_baileys');
 
     sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true,
+        printQRInTerminal: false,
         defaultQueryTimeoutMs: undefined,
         browser: ["OmniDesk Pro", "Chrome", "2.0.0"]
     });
@@ -64,6 +76,7 @@ export const startWhatsApp = async () => {
             qrCode = qr;
             connectionStatus = 'connecting';
             console.log("📲 Novo QR Code gerado");
+            qrcode.generate(qr, { small: true });
             getIO().emit('whatsapp:qr', qr);
             getIO().emit('whatsapp:status', { status: 'connecting' });
         }
