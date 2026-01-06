@@ -6,6 +6,7 @@ import ChatWindow from './components/chat/ChatWindow';
 import TicketBoard from './components/tickets/TicketBoard';
 import UserManagement from './components/users/UserManagement';
 import Dashboard from './components/dashboard/Dashboard';
+import Settings from './components/settings/Settings';
 import { ToastProvider, useToast } from './components/ui/Toast';
 import { API_URL, SOCKET_URL, NOTIFICATION_SOUND } from './config';
 import { io } from 'socket.io-client';
@@ -239,6 +240,7 @@ const AppContent = () => {
         )}
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'users' && <UserManagement />}
+        {activeTab === 'settings' && <Settings />}
       </div>
     </div>
   );

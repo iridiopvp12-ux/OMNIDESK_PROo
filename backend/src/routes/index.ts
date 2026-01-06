@@ -3,6 +3,7 @@ import { ticketRoutes } from './ticket.routes';
 import { contactRoutes } from './contact.routes';
 import { authRoutes } from './auth.routes';
 import { dashboardRoutes } from './dashboard.routes';
+import { settingsRoutes } from './settings.routes';
 import { upload } from '../services/upload';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
@@ -14,6 +15,7 @@ router.use("/", authRoutes);
 // Protected Routes
 router.use("/tickets", authMiddleware, ticketRoutes);
 router.use("/dashboard", authMiddleware, dashboardRoutes);
+router.use("/settings", authMiddleware, settingsRoutes);
 router.use("/contacts", authMiddleware, contactRoutes);
 router.use("/", authMiddleware, contactRoutes); // Messages endpoints
 
