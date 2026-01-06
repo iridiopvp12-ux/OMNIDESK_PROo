@@ -27,7 +27,18 @@ export const logout = async () => {
 export const resetSession = async () => {
     try {
         console.log("🔄 Resetando sessão WhatsApp...");
-        await logout();
+
+        // Force close socket if open to release file handles
+        try {
+            if (sock && sock.ws) {
+                sock.ws.close();
+            } else {
+                await logout();
+            }
+        } catch (err) {
+            console.warn("Aviso: Erro ao fechar socket:", err);
+        }
+
         sock = undefined;
         qrCode = null;
         connectionStatus = 'disconnected';
@@ -88,7 +99,13 @@ export const startWhatsApp = async () => {
             getIO().emit('whatsapp:status', { status: 'disconnected' });
 
             console.log('❌ Conexão caiu. Reconectando...', shouldReconnect);
-            if (shouldReconnect) startWhatsApp();
+
+            if (shouldReconnect) {
+                startWhatsApp();
+            } else {
+                console.log('📴 Conexão encerrada definitivamente (Logout ou Banimento). Resetando para novo QR Code...');
+                resetSession();
+            }
         } else if (connection === 'open') {
             connectionStatus = 'connected';
             qrCode = null;
