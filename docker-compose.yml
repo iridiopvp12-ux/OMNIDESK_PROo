@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # Banco de Dados
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # Backend API
+  backend:
+    build: ./backend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgres://user:password@db:5432/mydb
+      JWT_SECRET: segredo_super_secreto_mudar_em_producao
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      PORT: 3001
+    depends_on:
+      - db
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/auth_info_baileys:/app/auth_info_baileys
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

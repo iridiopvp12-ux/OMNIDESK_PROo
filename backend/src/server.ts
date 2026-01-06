@@ -6,12 +6,26 @@ import { startWhatsApp } from "./services/whatsapp";
 import { router } from "./routes";
 import { initIO } from "./services/socket";
 import http from "http";
+import helmet from "helmet";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
 
 dotenv.config();
 
 const app = express();
+
+// Segurança e Otimização
+app.use(helmet());
+app.use(compression());
 app.use(cors());
 app.use(express.json());
+
+// Rate Limiting (Proteção DDoS básica)
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 1000 // limite de requisições por IP
+});
+app.use("/api", limiter);
 
 // --- 0. CONFIGURAÇÃO DE MÍDIA ---
 // Usa path.resolve para garantir o caminho correto independente de onde o script é rodado
