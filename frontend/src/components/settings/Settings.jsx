@@ -50,6 +50,19 @@ const Settings = () => {
         } catch(e) { addToast("Erro ao desconectar", "error"); }
     };
 
+    const handleReset = async () => {
+        if(!confirm("Isso apagará a sessão atual e gerará um novo QR Code. Continuar?")) return;
+        try {
+            await fetch(`${API_URL}/settings/whatsapp/reset`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setStatus('disconnected');
+            setQrCode(null);
+            addToast("Sessão resetada. Aguarde o novo QR Code...", "info");
+        } catch(e) { addToast("Erro ao resetar", "error"); }
+    };
+
     return (
         <div className="flex-1 bg-gray-50/50 p-8 h-full overflow-y-auto font-sans">
             <h1 className="text-3xl font-bold text-gray-800 mb-8 tracking-tight">Configurações do Sistema</h1>
@@ -85,13 +98,25 @@ const Settings = () => {
                                     <p className="text-xs text-gray-400 mt-1">Abra o WhatsApp {'>'} Configurações {'>'} Aparelhos conectados</p>
                                 </>
                             ) : (
-                                <div className="text-gray-400">
+                                <div className="text-gray-400 flex flex-col items-center">
                                     <RefreshCw size={40} className="mx-auto mb-4 animate-spin opacity-50"/>
-                                    <p>Aguardando QR Code...</p>
+                                    <p className="mb-4">Aguardando QR Code...</p>
+                                    <button onClick={handleReset} className="text-xs text-red-500 hover:underline">
+                                        Demorando muito? Resetar Conexão
+                                    </button>
                                 </div>
                             )}
                         </div>
                     )}
+                </div>
+
+                {/* Rodapé de Reset Global */}
+                <div className="mt-8 border-t border-gray-100 pt-6">
+                    <h3 className="text-sm font-bold text-gray-800 mb-2">Zona de Perigo</h3>
+                    <p className="text-xs text-gray-500 mb-4">Se estiver enfrentando problemas de conexão persistentes, force o reset total da sessão.</p>
+                    <button onClick={handleReset} className="w-full border border-red-200 text-red-600 hover:bg-red-50 py-2 rounded-lg text-sm font-bold transition">
+                        Resetar Conexão (Forçar Logout)
+                    </button>
                 </div>
             </div>
         </div>
