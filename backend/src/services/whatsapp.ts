@@ -201,7 +201,7 @@ export const startWhatsApp = async () => {
             });
 
             // 3. Salva mensagem no banco
-            await prisma.message.create({
+            const newMessage = await prisma.message.create({
                 data: {
                     contactId,
                     content,
@@ -210,6 +210,14 @@ export const startWhatsApp = async () => {
                     mediaUrl: mediaUrl // Pode ser null se for texto
                 }
             });
+
+            // Update contact timestamp to move it to top
+            await prisma.contact.update({
+                where: { id: contactId },
+                data: { updatedAt: new Date() }
+            });
+
+            getIO().emit("message:new", { contactId, message: newMessage });
 
             // 4. IA Processa (com suporte a arquivo se houver)
             if (contact.isAiActive) {
@@ -251,7 +259,7 @@ export const startWhatsApp = async () => {
                 if (textoFinal) {
                     await sock.sendMessage(contactId, { text: textoFinal });
                     
-                    await prisma.message.create({
+                    const aiMessage = await prisma.message.create({
                         data: {
                             contactId,
                             content: textoFinal,
@@ -260,6 +268,14 @@ export const startWhatsApp = async () => {
                             mediaType: 'text'
                         }
                     });
+
+                     // Update contact timestamp
+                     await prisma.contact.update({
+                        where: { id: contactId },
+                        data: { updatedAt: new Date() }
+                    });
+
+                    getIO().emit("message:new", { contactId, message: aiMessage });
                 }
             }
         }
