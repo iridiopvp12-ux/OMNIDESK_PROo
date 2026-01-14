@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "ts-node src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "setup": "ts-node src/scripts/setup.ts",
+    "db:seed": "ts-node src/scripts/init_admin.ts"
   },
   "keywords": [],
   "author": "",
