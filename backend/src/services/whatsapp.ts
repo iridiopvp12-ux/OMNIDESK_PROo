@@ -136,6 +136,30 @@ export const startWhatsApp = async () => {
         }
     });
 
+    // --- SINCRONIZAÇÃO DE CONTATOS (Carrega a lista ao conectar) ---
+    sock.ev.on('contacts.upsert', async (contacts: any[]) => {
+        console.log(`👤 Recebido ${contacts.length} contatos para sincronizar.`);
+        for (const c of contacts) {
+            try {
+                if (!c.id || c.id === 'status@broadcast') continue;
+
+                await prisma.contact.upsert({
+                    where: { id: c.id },
+                    update: { name: c.name || c.notify || undefined },
+                    create: {
+                        id: c.id,
+                        name: c.name || c.notify || `Contato ${c.id.split('@')[0]}`,
+                        isAiActive: true
+                    }
+                });
+            } catch (err) {
+                console.error("Erro ao sincronizar contato:", c.id, err);
+            }
+        }
+        // Avisa o front para recarregar a lista
+        getIO().emit('contact:update', { action: 'sync' });
+    });
+
     sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
         if (type !== 'notify') return;
 
