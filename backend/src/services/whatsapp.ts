@@ -267,7 +267,7 @@ export const startWhatsApp = async () => {
                                 title: reportData.tema || "Triagem Finalizada",
                                 priority: reportData.prioridade || "medium",
                                 status: "todo",
-                                summary: reportData 
+                                summary: JSON.stringify(reportData)
                             }
                         });
                         
