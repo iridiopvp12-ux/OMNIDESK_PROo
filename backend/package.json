@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "cross-env DATABASE_URL=postgresql://postgres:admin@127.0.0.1:5432/omnidesk_test_db?schema=public npx prisma db push && cross-env DATABASE_URL=postgresql://postgres:admin@127.0.0.1:5432/omnidesk_test_db?schema=public ts-node src/server.ts",
+    "dev": "cross-env DATABASE_URL=file:./dev.db npx prisma db push && cross-env DATABASE_URL=file:./dev.db ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "setup": "ts-node src/scripts/setup.ts",
