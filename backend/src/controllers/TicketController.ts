@@ -2,6 +2,17 @@ import { Request, Response } from 'express';
 import { prisma } from '../services/prisma';
 import { getIO } from '../services/socket';
 
+const parseTicket = (ticket: any) => {
+    if (ticket && ticket.summary && typeof ticket.summary === 'string') {
+        try {
+            ticket.summary = JSON.parse(ticket.summary);
+        } catch (e) {
+            console.error("Erro ao fazer parse do summary:", e);
+        }
+    }
+    return ticket;
+};
+
 export class TicketController {
     // Listar Tickets (Kanban)
     static async index(req: Request, res: Response) {
@@ -21,7 +32,8 @@ export class TicketController {
                 orderBy: { updatedAt: 'desc' }
             });
 
-            res.json([...activeTickets, ...doneTickets]);
+            const tickets = [...activeTickets, ...doneTickets].map(parseTicket);
+            res.json(tickets);
         } catch (e) {
             console.error(e);
             res.status(500).json({ error: "Erro ao buscar tickets" });
@@ -41,8 +53,9 @@ export class TicketController {
                     departmentId: user?.departmentId
                 }
             });
-            getIO().emit("ticket:update", ticket);
-            res.json(ticket);
+            const parsedTicket = parseTicket(ticket);
+            getIO().emit("ticket:update", parsedTicket);
+            res.json(parsedTicket);
         } catch (e) {
             res.status(500).json({ error: "Erro ao assumir ticket" });
         }
@@ -60,8 +73,9 @@ export class TicketController {
                     assignedToId: null
                 }
             });
-            getIO().emit("ticket:update", ticket);
-            res.json(ticket);
+            const parsedTicket = parseTicket(ticket);
+            getIO().emit("ticket:update", parsedTicket);
+            res.json(parsedTicket);
         } catch (e) {
             res.status(500).json({ error: "Erro ao encerrar ticket" });
         }
@@ -93,8 +107,9 @@ export class TicketController {
                 where: { id: req.params.id },
                 data: req.body
             });
-            getIO().emit("ticket:update", ticket);
-            res.json(ticket);
+            const parsedTicket = parseTicket(ticket);
+            getIO().emit("ticket:update", parsedTicket);
+            res.json(parsedTicket);
         } catch (e) {
             res.status(500).json({ error: "Erro ao atualizar ticket" });
         }

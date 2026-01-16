@@ -54,7 +54,7 @@ model Ticket {
   status      String   @default("todo") 
   priority    String   @default("medium") 
   
-  summary     Json?    
+  summary     String?
   closingNote String?  
   
   contactId   String
