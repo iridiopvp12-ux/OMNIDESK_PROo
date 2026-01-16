@@ -28,8 +28,8 @@ export class DashboardController {
             const tickets = await prisma.ticket.findMany({
                 where: {
                     OR: [
-                        { title: { contains: q, mode: 'insensitive' } },
-                        { contact: { name: { contains: q, mode: 'insensitive' } } },
+                        { title: { contains: q } },
+                        { contact: { name: { contains: q } } },
                         { id: { contains: q } } // Busca por ID também
                     ]
                 },
