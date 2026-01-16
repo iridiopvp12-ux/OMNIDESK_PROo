@@ -103,9 +103,14 @@ export class TicketController {
     // Atualização Genérica
     static async update(req: Request, res: Response) {
         try {
+            const data = { ...req.body };
+            if (data.summary && typeof data.summary === 'object') {
+                data.summary = JSON.stringify(data.summary);
+            }
+
             const ticket = await prisma.ticket.update({
                 where: { id: req.params.id },
-                data: req.body
+                data: data
             });
             const parsedTicket = parseTicket(ticket);
             getIO().emit("ticket:update", parsedTicket);
