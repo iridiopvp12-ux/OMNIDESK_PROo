@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "cross-env DATABASE_URL=file:./dev.db npx prisma db push && cross-env DATABASE_URL=file:./dev.db ts-node src/server.ts",
+    "dev": "cross-env DATABASE_URL=file:./dev.db npx prisma db push && npm run db:seed && cross-env DATABASE_URL=file:./dev.db ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "setup": "ts-node src/scripts/setup.ts",
-    "db:seed": "ts-node src/scripts/init_admin.ts"
+    "db:seed": "cross-env DATABASE_URL=file:./dev.db ts-node src/scripts/init_admin.ts"
   },
   "keywords": [],
   "author": "",
